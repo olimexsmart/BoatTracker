@@ -1,105 +1,84 @@
 /*
-    Web client
 
-    This sketch connects to a website through a GSM shield. Specifically,
-    this example downloads the URL "http://www.arduino.cc/asciilogo.txt" and
-    prints it to the Serial monitor.
-
-    Circuit:
-    GSM shield attached to an Arduino
-    SIM card with a data plan
-
-    created 8 Mar 2012
-    by Tom Igoe
-
-    http://www.arduino.cc/en/Tutorial/GSMExamplesWebClient
 
 */
 
 // libraries
 #include <GSM.h>
 //#include <SD.h>
+#include <TinyGPS++.h>
 
 // PIN Number
-#define PINNUMBER ""
-
-// APN data
-#define GPRS_APN       "wap.tim.it" // replace your GPRS APN
-#define GPRS_LOGIN     "WAPTIM"    // replace with your GPRS login
-#define GPRS_PASSWORD  "WAPTIM" // replace with your GPRS password
+#define PINNUMBER 		""
+#define GPRS_APN       	"wap.tim.it"
+#define GPRS_LOGIN     	"WAPTIM"
+#define GPRS_PASSWORD  	"WAPTIM"
+#define RXPin 			11
+#define TXPin 			12
+#define GPSBaud 		57600
+#define port			80
+#define server			"olimexsmart.it"
 
 // initialize the library instance
 GSMClient client;
 GPRS gprs;
 GSM gsmAccess;
+TinyGPSPlus gps;
 
-// URL, path & port (for example: arduino.cc)
-char server[] = "arduino.cc";
-char path[] = "/asciilogo.txt";
-int port = 80; // port 80 is the default for HTTP
+char data[256];
 
+/*
+    SETUP
+*/
 void setup() {
     // initialize serial communications and wait for port to open:
-    Serial.begin(9600);
-    while (!Serial) {
-        ; // wait for serial port to connect. Needed for native USB port only
-    }
+    Serial.begin(115200);
+    Serial1.begin(GPSBaud);
 
-    Serial.println(F("Starting Arduino web client."));
+    Serial.println(F("Starting Boat Tracker."));
     Serial.println(FreeRam());
-    // connection state
-    boolean notConnected = true;
 
-    // After starting the modem with GSM.begin()
-    // attach the shield to the GPRS network with the APN, login and password
-    while (notConnected) {
-        if ((gsmAccess.begin() == GSM_READY) &
-                (gprs.attachGPRS(GPRS_APN, GPRS_LOGIN, GPRS_PASSWORD) == GPRS_READY)) {
-            notConnected = false;
-        } else {
-            Serial.println(F("Not connected"));
-            delay(1000);
-        }
-    }
+    // Wait for GPS signal to become valid
+    waitGPSFix();
+    Serial.println("Got GPS fix");
 
-    Serial.println(F("connecting..."));
+    // Wait for GSM to be connecter to network
+    waitGSMFix();
+    Serial.println("Got GSM connection");
 
-    // if you get a connection, report back via serial:
-    if (client.connect(server, port)) {
-        Serial.println("connected");
-        // Make a HTTP request:
-        client.print("GET ");
-        client.print(path);
-        client.println(" HTTP/1.1");
-        client.print("Host: ");
-        client.println(server);
-        client.println("Connection: close");
-        client.println();
-    } else {
-        // if you didn't get a connection to the server:
-        Serial.println("connection failed");
-    }
+    Serial.println(F("Starting main loop"));
 }
 
+
+/*
+    LOOP
+*/
 void loop() {
-    // if there are incoming bytes available
-    // from the server, read them and print them:
-    if (client.available()) {
-        char c = client.read();
-        Serial.print(c);
+    /*
+        Some stuff will change when the SD card will be added.
+        If the connection to the server fails, the data will be saved into the memory card.
+        Whenever the connection is re-estabilished, all the data stored will be sent.
+    */
+    // Get GPS data into URL encoded string
+    if (getFormattedData()) {
+        // Send to server
+        Serial.println(data);
+        if (sendData())
+            Serial.println(F("Connected to olimexsmart"));
+        else
+            Serial.println(F("Connection failed"));
+    } else {
+        waitGPSFix();
     }
 
-    // if the server's disconnected, stop the client:
-    if (!client.available() && !client.connected()) {
-        Serial.println();
-        Serial.println("disconnecting.");
-        client.stop();        
-        // do nothing forevermore:
-        for (;;)
-            ;
-    }
+    // Repeat keeping the GPS active
+    smartDelay(5000);
 }
 
+
+/*
+    UTILITIES
+*/
 int FreeRam(void) {
     extern int  __bss_end;
     extern int* __brkval;
