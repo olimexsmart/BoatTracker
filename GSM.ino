@@ -15,7 +15,7 @@ void waitGSMFix() {
 }
 
 bool sendData() {
-	bool status = false;
+    bool status = false; // Needed bool instead of return to close connection
     // Send data to the database
     if (client.connect(server, port)) {
         // Make a HTTP request:
@@ -25,30 +25,40 @@ bool sendData() {
         client.print("Host: ");
         client.println(server);
         client.println("Connection: close");
-        client.println();        
+        client.println();
 
         Serial.println("POST sent");
     } else
         status = false;
 
-    smartDelay(1000);
-	char response[1000];	
-	int i = 0;
+	unsigned long responseTime = millis();
+    while (!client.available()) {
+        smartDelay(10);
+        if (millis() - responseTime > TIMEOUT) { // No response timeout
+        	status = false;
+        	break;        
+        }
+    }
+	Serial.print(F("Waited for response: "));
+	Serial.println(millis() - responseTime);
+    
+    char response[1000];
+    int i = 0;
     while (client.available()) {
         response[i++] = client.read();
         if (i == 999) {
-        	status = false;        
-        	break;
+            status = false;
+            break;
         }
     }
     response[i] = '\0';
-	
+
     client.stop();
     Serial.println(i);
-	Serial.println(response);
-	if (strstr(response, "OK")) 
-		status = true;
-    
+    Serial.println(response);
+    if (strstr(response, "OK"))
+        status = true;
+
     return status;
 }
 
