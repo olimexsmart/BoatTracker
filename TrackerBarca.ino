@@ -19,6 +19,8 @@
 #define DATARATE		10000	// Send point every N millisecons
 #define TIMEOUT			5000	// Connection timeout for response from server
 #define SD_CS			11		// SPI SD CS on pin 11
+#define FILEBUFF		"buffer.txt"
+#define BUFFLEN			256
 
 // initialize the library instance
 GSMClient client;
@@ -26,7 +28,7 @@ GPRS gprs;
 GSM gsmAccess;
 TinyGPSPlus gps;
 
-char data[256];
+char data[BUFFLEN];
 unsigned long loopTimer;
 
 /*
@@ -73,16 +75,22 @@ void loop() {
     if (getFormattedData()) {
         // Send to server
         Serial.println(data);
-        if (sendData())
+        if (sendData()) {
             Serial.println(F("Data correctly sent"));
-        else
+            // Probably we have connection, try to empty the buffer
+            // At the same time the function must return for another loop
+            sendBufferEntries(DATARATE - (millis() - loopTimer));
+        }
+        else {
             Serial.println(F("Connection failed"));
+            storeInBuffer();
+        }
     } else {
         waitGPSFix();
     }
 
     // Repeat keeping the GPS active, maintaining a constant frequency
-    smartDelay(DATARATE - (millis() - loopTimer));
+    smartDelay(DATARATE - constrain(millis() - loopTimer, 0, DATARATE));
 }
 
 
