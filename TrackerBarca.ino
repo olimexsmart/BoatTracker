@@ -16,7 +16,7 @@
 #define GPSBaud 		57600
 #define port			80
 #define server			"olimexsmart.it"
-#define DATARATE		10000	// Send point every N millisecons
+#define DATARATE		45000	// Send point every N millisecons
 #define TIMEOUT			5000	// Connection timeout for response from server
 #define SD_CS			11		// SPI SD CS on pin 11
 #define FILEBUFF		"buffer.txt"
@@ -52,12 +52,13 @@ void setup() {
     waitGSMFix();
     Serial.println(F("Got GSM connection.\nInitializing SD card..."));
 
+	pinMode(SD_CS, OUTPUT);
     if (!SD.begin(SD_CS)) {
-        Serial.println("SD card initialization failed!");
+        Serial.println(F("SD card initialization failed!"));
         return;
     }
 
-    Serial.println(F("SD card OK\nStarting main loop."));
+    Serial.println(F("SD card OK\nStarting main loop.\n#############\n"));
 }
 
 
@@ -76,19 +77,28 @@ void loop() {
         // Send to server
         Serial.println(data);
         if (sendData()) {
-            Serial.println(F("Data correctly sent"));
+            Serial.println(F("Positive sendData call."));
             // Probably we have connection, try to empty the buffer
             // At the same time the function must return for another loop
-            sendBufferEntries(DATARATE - (millis() - loopTimer));
+            if(sendBufferEntries(DATARATE - constrain(millis() - loopTimer, 0, DATARATE)))
+            	Serial.println(F("Positive sendBufferEntries call."));
+            else
+            	Serial.println(F("Negative sendBufferEntries call."));
         }
         else {
-            Serial.println(F("Connection failed"));
-            storeInBuffer();
+            Serial.println(F("Negative sendData call."));
+            if (storeInBuffer())
+                Serial.println(F("Positive storeInBuffer call."));
+            else
+                Serial.println(F("Negative storeInBuffer call."));
         }
     } else {
         waitGPSFix();
     }
 
+	Serial.print(F("End loop with millis left: "));
+	Serial.println(DATARATE - constrain(millis() - loopTimer, 0, DATARATE));
+	Serial.println(F("++++++++++++++++\n"));
     // Repeat keeping the GPS active, maintaining a constant frequency
     smartDelay(DATARATE - constrain(millis() - loopTimer, 0, DATARATE));
 }

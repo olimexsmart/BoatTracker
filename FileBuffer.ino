@@ -1,13 +1,17 @@
-bool storeInBuffer() {
+bool storeInBuffer() {	
     File storage = SD.open(FILEBUFF, FILE_WRITE);
     if (!storage)
         return false;
 
-    if (storage.println(data) != strlen(data)) {
+	// Can't use prinln directly because it appends also a \r which rouins things the on the HTTP side
+	strcat(data, "\n"); 
+    if (storage.print(data) != strlen(data)) {
         Serial.println("Mismatch in written data");
         storage.close();
         return false;
     }
+    
+    Serial.println(F("Data correctly stored."));
     storage.close();
     return true;
 }
@@ -15,19 +19,24 @@ bool storeInBuffer() {
 // Send one entry to the server
 bool sendBufferEntries(unsigned long window) {
     unsigned long timer = millis(); // Keep track of the time we spent in the function
+    window -= 3000; // Remove 3000 as it's a worst case scenario for GSM data sending time
 
     // Check if buffer is present
-    if (!SD.exists(FILEBUFF))
-        return true;	// Nominal, nothing to write
+    if (!SD.exists(FILEBUFF)) {
+    	Serial.println(F("File does not exists, no data stored."));
+    	return true;	// Nominal, nothing to send
+    }        
 
     File storage = SD.open(FILEBUFF, FILE_READ);
-    if (!storage)
-        return false; // Error in opening
-
-    int index = 0;
-    // Remove 3000 as it's a worst case scenario for GSM data sending time. Cast to prevent underflow
-    while (storage.available() && ((long) (millis() - timer - 3000) > (long) window)) { // Loop on lines until we have some time left, with some margin
+    if (!storage) {
+        Serial.println(F("Error in opening buffer file"));
+        return false; // Error in opening        
+    }
+    
+     
+    while (storage.available() && millis() - timer < window) { // Loop on lines until we have some time left, with some margin
         char c;
+        int index = 0;
         while ((c = storage.read()) != '\n') { // Once line at a time
             data[index] = c;
             index++;
@@ -37,7 +46,7 @@ bool sendBufferEntries(unsigned long window) {
             }
             data[index] = '\0'; // \n at the end would be a problem
         }
-
+		Serial.println(data);
         // Once we got the line check if was not already sent
         if (strstr(data, "###"))
             continue; // Line was already sent, got to the next one
@@ -50,10 +59,11 @@ bool sendBufferEntries(unsigned long window) {
             storage = SD.open(FILEBUFF, FILE_WRITE);
             if (!storage)
                 return false; // Probably also here delete file a good idea
-            storage.seek(pos - 5); // 3 chars before \n
+            storage.seek(pos - 5); // 5 chars before \n
             storage.println("###"); // Invalidating line, the \n is overwritten
             storage.flush();	// Ensure writing
-   /*         Slould be unecessary
+            Serial.println(F("Data sent from stored buffer and correctly invalidated."));
+   /*         Slould be not unecessary
     *          // Now open again in read mode 
             pos = storage.position();
             storage.close();
@@ -62,18 +72,21 @@ bool sendBufferEntries(unsigned long window) {
                 return false; // Probably also here delete file a good idea
             storage.seek(pos); */
         } else {
+        	Serial.println(F("ERROR in sendind data from stored buffer."));
             storage.close();
             return false; // Could not send the entry, end stream
         }
     } 
 	
     if (!storage.available()) { // Nothing else to read: delete the file
+    	Serial.println(F("Reached end of file, file deleted."));
 		storage.close();	
 		SD.remove(FILEBUFF);
 		return true;
     }
 
    	// Close file and return
+   	Serial.println(F("Not all entries sent in time, file not deleted."));   	
 	storage.close();	
 	return true;
 }

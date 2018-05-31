@@ -14,8 +14,7 @@ void waitGSMFix() {
     }
 }
 
-bool sendData() {
-    bool status = false; // Needed bool instead of return to close connection
+bool sendData() {    
     // Send data to the database
     if (client.connect(server, port)) {
         // Make a HTTP request:
@@ -27,16 +26,21 @@ bool sendData() {
         client.println("Connection: close");
         client.println();
 
-        Serial.println("POST sent");
-    } else
-        status = false;
+        Serial.println(F("POST request sent to server."));
+    } else {
+    	Serial.println(F("ERROR could not connect to server."));
+    	client.stop();
+    	return false;
+    }
+        
 
 	unsigned long responseTime = millis();
     while (!client.available()) {
         smartDelay(10);
         if (millis() - responseTime > TIMEOUT) { // No response timeout
-        	status = false;
-        	break;        
+        	Serial.println(F("ERROR response from server timeout."));
+        	client.stop();
+        	return false;        	
         }
     }
 	Serial.print(F("Waited for response: "));
@@ -47,18 +51,24 @@ bool sendData() {
     while (client.available()) {
         response[i++] = client.read();
         if (i == 999) {
-            status = false;
-            break;
+            Serial.println(F("ERROR response too large for buffer: probably error returned."));
+            client.stop();
+            return false;            
         }
     }
     response[i] = '\0';
 
     client.stop();
-    Serial.println(i);
     Serial.println(response);
-    if (strstr(response, "OK"))
-        status = true;
+    if (strstr(response, "OK")) {
+    	Serial.println(F("Got positive response from server."));
+    	return true;
+    } else {
+		Serial.println(F("ERROR got negative response from server."));
+    	return false;
+    }
+        
 
-    return status;
+    
 }
 
