@@ -66,8 +66,7 @@ void setup() {
     LOOP
 */
 void loop() {
-    /*
-        Some stuff will change when the SD card will be added.
+    /*        
         If the connection to the server fails, the data will be saved into the memory card.
         Whenever the connection is re-estabilished, all the data stored will be sent.
     */
@@ -76,7 +75,7 @@ void loop() {
     if (getFormattedData()) {
         // Send to server
         Serial.println(data);
-        if (sendData()) {
+        if (sendData()) {        	
             Serial.println(F("Positive sendData call."));
             // Probably we have connection, try to empty the buffer
             // At the same time the function must return for another loop

@@ -28,8 +28,7 @@ bool sendData() {
 
         Serial.println(F("POST request sent to server."));
     } else {
-    	Serial.println(F("ERROR could not connect to server."));
-    	client.stop();
+    	Serial.println(F("ERROR could not connect to server."));    	
     	return false;
     }
         
@@ -60,7 +59,7 @@ bool sendData() {
 
     client.stop();
     Serial.println(response);
-    if (strstr(response, "OK")) {
+    if (strstr(response, "ROGER")) {
     	Serial.println(F("Got positive response from server."));
     	return true;
     } else {
