@@ -1,12 +1,12 @@
 void waitGSMFix() {
-    // connection state
-    boolean notConnected = true;
+	unsigned long timeout = millis();
     // After starting the modem with GSM.begin()
     // attach the shield to the GPRS network with the APN, login and password
-    while (notConnected) {
+    // Give it a 3 minute timeout
+    while (GSMnotInit && millis() - timeout < 180000) {
         if ((gsmAccess.begin() == GSM_READY) &
                 (gprs.attachGPRS(GPRS_APN, GPRS_LOGIN, GPRS_PASSWORD) == GPRS_READY)) {
-            notConnected = false;
+            GSMnotInit = false;
         } else {
             Serial.println(F("Not connected"));
             delay(1000);
@@ -14,7 +14,11 @@ void waitGSMFix() {
     }
 }
 
-bool sendData() {    
+bool sendData() {   
+	if (GSMnotInit) { // Don't even try
+		Serial.println(F("ERROR module not correctly initialized, could not send"));		
+		return false;
+	}
     // Send data to the database
     if (client.connect(server, port)) {
         // Make a HTTP request:
