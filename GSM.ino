@@ -1,5 +1,5 @@
 void waitGSMFix() {
-	unsigned long timeout = millis();
+    unsigned long timeout = millis();
     // After starting the modem with GSM.begin()
     // attach the shield to the GPRS network with the APN, login and password
     // Give it a 3 minute timeout
@@ -8,17 +8,17 @@ void waitGSMFix() {
                 (gprs.attachGPRS(GPRS_APN, GPRS_LOGIN, GPRS_PASSWORD) == GPRS_READY)) {
             GSMnotInit = false;
         } else {
-            Serial.println(F("Not connected"));
+            printDebug(F("ERROR Not connected.\n"));
             delay(1000);
         }
     }
 }
 
-bool sendData() {   
-	if (GSMnotInit) { // Don't even try
-		Serial.println(F("ERROR module not correctly initialized, could not send"));		
-		return false;
-	}
+bool sendData() {
+    if (GSMnotInit) { // Don't even try
+        printDebug(F("ERROR module not correctly initialized, could not send.\n"));
+        return false;
+    }
     // Send data to the database
     if (client.connect(server, port)) {
         // Make a HTTP request:
@@ -30,48 +30,48 @@ bool sendData() {
         client.println("Connection: close");
         client.println();
 
-        Serial.println(F("POST request sent to server."));
+        printDebug(F("\nPOST request sent to server.\n"));
     } else {
-    	Serial.println(F("ERROR could not connect to server."));    	
-    	return false;
+        printDebug(F("\nERROR could not connect to server.\n"));
+        return false;
     }
-        
 
-	unsigned long responseTime = millis();
+
+    unsigned long responseTime = millis();
     while (!client.available()) {
         smartDelay(10);
         if (millis() - responseTime > TIMEOUT) { // No response timeout
-        	Serial.println(F("ERROR response from server timeout."));
-        	client.stop();
-        	return false;        	
+            printDebug(F("ERROR response from server timeout.\n"));
+            client.stop();
+            return false;
         }
     }
-	Serial.print(F("Waited for response: "));
-	Serial.println(millis() - responseTime);
-    
+    printDebug(F("Waited for response: "));
+    printDebug(itoa(millis() - responseTime, data, 10));
+
     char response[1000];
-    int i = 0;
+    int i = 1;
+    response[0] = '\n'; // This way in the debug print it gets a newline
     while (client.available()) {
         response[i++] = client.read();
         if (i == 999) {
-            Serial.println(F("ERROR response too large for buffer: probably error returned."));
+            printDebug(F("\nERROR response too large for buffer: probably error returned.\n"));
             client.stop();
-            return false;            
+            return false;
         }
     }
     response[i] = '\0';
 
     client.stop();
-    Serial.println(response);
+    printDebug(response);
+    printDebug(F("Response lenght: "));
+    printDebug(itoa(i - 1, data, 10));
     if (strstr(response, "ROGER")) {
-    	Serial.println(F("Got positive response from server."));
-    	return true;
-    } else {
-		Serial.println(F("ERROR got negative response from server."));
-    	return false;
+        printDebug(F("\nGot positive response from server.\n"));
+        return true;
     }
-        
-
     
+    printDebug(F("\nERROR got negative response from server.\n"));
+    return false;
 }
 

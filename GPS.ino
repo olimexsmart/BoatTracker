@@ -9,22 +9,22 @@ bool getFormattedData() {
     if (!gps.location.isValid() || !gps.course.isValid() || !gps.speed.isValid() || !gps.date.isValid() || !gps.time.isValid())
         return false;
 
-	data [0] = '\0'; // Empty buffer
-	char buffer[15];
-	
-	// Latitude
+    data [0] = '\0'; // Empty buffer
+    char buffer[15];
+
+    // Latitude
     dtostrf(gps.location.lat(), 6, 4, buffer);
     strcat(data, "?lat=");
     strcat(data, buffer);
-	// Longitude
+    // Longitude
     dtostrf(gps.location.lng(), 6, 4, buffer);
     strcat(data, "&lng=");
     strcat(data, buffer);
-	// Course
+    // Course
     dtostrf(gps.course.deg(), 3, 1, buffer);
     strcat(data, "&course=");
     strcat(data, buffer);
-	// Speed
+    // Speed
     dtostrf(gps.speed.kmph(), 4, 2, buffer);
     strcat(data, "&speed=");
     strcat(data, buffer);
@@ -35,23 +35,23 @@ bool getFormattedData() {
     itoa(gps.date.year(), buffer, 10);
     strcat(data, buffer);
     strcat(data, "-");
-	// Month
+    // Month
     itoa(gps.date.month(), buffer, 10);
     strcat(data, buffer);
     strcat(data, "-");
-	// Day
+    // Day
     itoa(gps.date.day(), buffer, 10);
     strcat(data, buffer);
     strcat(data, "+"); // Space URL encoded
-	// Hour
+    // Hour
     itoa(gps.time.hour(), buffer, 10);
     strcat(data, buffer);
     strcat(data, ":");
-	// Minute
+    // Minute
     itoa(gps.time.minute(), buffer, 10);
     strcat(data, buffer);
     strcat(data, ":");
-	// Second
+    // Second
     itoa(gps.time.second(), buffer, 10);
     strcat(data, buffer);
 
@@ -62,8 +62,7 @@ bool getFormattedData() {
 static void smartDelay(unsigned long ms)
 {
     unsigned long start = millis();
-    do
-    {
+    do {
         while (Serial1.available())
             gps.encode(Serial1.read());
     } while (millis() - start < ms);
