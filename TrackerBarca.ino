@@ -16,7 +16,7 @@
 #define GPSBaud 		57600
 #define port			80
 #define server			"olimexsmart.it"
-#define DATARATE		45000	// Send point every N millisecons
+#define DATARATE		30000	// Send point every N millisecons
 #define TIMEOUT			5000	// Connection timeout for response from server
 #define SD_CS			11		// SPI SD CS on pin 11
 #define FILEBUFF		"buffer.txt"
@@ -39,6 +39,7 @@ unsigned long loopTimer;
 
 // connection state
 boolean GSMnotInit = true;
+int GSMerrors = 0;
 
 
 
@@ -84,7 +85,7 @@ void setup() {
     printDebug(F("Got GPS fix.\nWaiting for GSM connectivity...\n"));
 
     // Wait for GSM to be connecter to network
-    waitGSMFix();
+    waitGSMFix(false);
     if (!GSMnotInit) {
         digitalWrite(GSMLED, LOW);
         printDebug(F("Got GSM connection.\n"));
@@ -113,11 +114,19 @@ void loop() {
     if (getFormattedData()) {
         // Send to server
         printDebug(data);
-        if (GSMnotInit) // If not initialized, initialize
-            waitGSMFix();
+        if (GSMnotInit) {	// If not initialized, initialize
+        	printDebug(F("Attempting again to initialize GSM.\n"));
+            waitGSMFix(false);
+        }
+       	if (GSMerrors % 30 == 0 && GSMerrors != 0) {// Every 15 minutes restart modem if errors persist
+       		printDebug(F("Trying to restart modem because of accumulating errors.\n"));
+       		GSMnotInit = true;
+       		waitGSMFix(true); // Flag restart
+       	}
 
         if (sendData()) { // If not connected this will fail anyway
             digitalWrite(GSMLED, LOW);
+            GSMerrors = 0; // Connection required
             printDebug(F("Positive sendData call.\n"));
             // Probably we have connection, try to empty the buffer
             // At the same time the function must return for another loop
@@ -128,6 +137,7 @@ void loop() {
         }
         else {
             digitalWrite(GSMLED, HIGH); // Signal disconnection
+            GSMerrors++;
             printDebug(F("Negative sendData call.\n"));
             if (storeInBuffer()) {
                 digitalWrite(SDLED, LOW);

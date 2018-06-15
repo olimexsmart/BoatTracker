@@ -1,14 +1,16 @@
-void waitGSMFix() {
+void waitGSMFix(bool restart) {
     unsigned long timeout = millis();
     // After starting the modem with GSM.begin()
     // attach the shield to the GPRS network with the APN, login and password
     // Give it a 3 minute timeout
-    while (GSMnotInit && millis() - timeout < 180000) {
-        if ((gsmAccess.begin() == GSM_READY) &
-                (gprs.attachGPRS(GPRS_APN, GPRS_LOGIN, GPRS_PASSWORD) == GPRS_READY)) {
-            GSMnotInit = false;
+    while (GSMnotInit && millis() - timeout < DATARATE) {
+        if (gsmAccess.begin("", restart) == GSM_READY) {
+            if (gprs.attachGPRS(GPRS_APN, GPRS_LOGIN, GPRS_PASSWORD) == GPRS_READY) {
+                GSMnotInit = false;
+                printDebug(F("GSM correctly connected.\n"));
+            }
         } else {
-            printDebug(F("ERROR Not connected.\n"));
+            printDebug(F("ERROR GSM failed to connect.\n"));
             delay(1000);
         }
     }
@@ -70,7 +72,7 @@ bool sendData() {
         printDebug(F("\nGot positive response from server.\n"));
         return true;
     }
-    
+
     printDebug(F("\nERROR got negative response from server.\n"));
     return false;
 }
