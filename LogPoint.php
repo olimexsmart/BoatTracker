@@ -16,6 +16,8 @@ $buffered = isset($_GET['buffered']) ? 1 : 0;
 $query = "INSERT INTO boattracker.uomodelfaro VALUES('{$_GET['date']}', {$_GET['lat']}, {$_GET['lng']}, {$_GET['speed']}, {$_GET['course']}, $buffered);";
 
 if (!$sql->query($query)) {
+    if (strpos($sql->error, "Duplicate entry") !== false)
+        die('ROGER'); // If the entry is already present for any reason, don't block the dump execution
     die("Could not insert into database: " . $sql->error);
 }
 

@@ -8,11 +8,11 @@ void waitGSMFix(bool restart) {
             if (gprs.attachGPRS(GPRS_APN, GPRS_LOGIN, GPRS_PASSWORD) == GPRS_READY) {
                 GSMnotInit = false;
                 printDebug(F("GSM correctly connected.\n"));
+                return;
             }
-        } else {
-            printDebug(F("ERROR GSM failed to connect.\n"));
-            delay(1000);
         }
+        printDebug(F("ERROR GSM failed to connect.\n"));
+        delay(1000);
     }
 }
 

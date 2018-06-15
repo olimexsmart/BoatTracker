@@ -17,7 +17,7 @@
 #define port			80
 #define server			"olimexsmart.it"
 #define DATARATE		30000	// Send point every N millisecons
-#define TIMEOUT			5000	// Connection timeout for response from server
+#define TIMEOUT			15000	// Connection timeout for response from server
 #define SD_CS			11		// SPI SD CS on pin 11
 #define FILEBUFF		"buffer.txt"
 #define FILELOG			"logger.txt"
@@ -95,7 +95,6 @@ void setup() {
 
 
     printDebug(F("Starting main loop.\n################\n\n"));
-
     digitalWrite(SETUPLED, LOW);
 }
 
@@ -115,11 +114,11 @@ void loop() {
         // Send to server
         printDebug(data);
         if (GSMnotInit) {	// If not initialized, initialize
-        	printDebug(F("Attempting again to initialize GSM.\n"));
+        	printDebug(F("\nAttempting again to initialize GSM.\n"));
             waitGSMFix(false);
         }
-       	if (GSMerrors % 30 == 0 && GSMerrors != 0) {// Every 15 minutes restart modem if errors persist
-       		printDebug(F("Trying to restart modem because of accumulating errors.\n"));
+       	if (GSMerrors % 30 == 0 && GSMerrors != 0) {// Every 30 errors restart modem if errors persist
+       		printDebug(F("\nTrying to restart modem because of accumulating errors.\n"));
        		GSMnotInit = true;
        		waitGSMFix(true); // Flag restart
        	}
@@ -149,9 +148,11 @@ void loop() {
             }
         }
     } else {
+    	printDebug(F("ERROR Signal GPS lost.\n"));
         digitalWrite(GPSLED, HIGH);
         waitGPSFix();
         digitalWrite(GPSLED, LOW);
+        printDebug(F("Signal GPS reaquired.\n"));
     }
 
     printDebug(F("End loop with millis left: "));

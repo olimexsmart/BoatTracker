@@ -48,7 +48,7 @@ bool sendBufferEntries(unsigned long window) {
             }
             data[index] = '\0'; // \n at the end would be a problem
         }
-        printDebug(data);
+        //printDebug(data);
         // Once we got the line check if was not already sent
         if (strstr(data, "###"))
             continue; // Line was already sent, got to the next one
