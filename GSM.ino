@@ -12,7 +12,7 @@ void waitGSMFix(bool restart) {
             }
         }
         printDebug(F("ERROR GSM failed to connect.\n"));
-        delay(1000);
+        smartDelay(1000);
     }
 }
 

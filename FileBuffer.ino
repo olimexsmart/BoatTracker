@@ -53,6 +53,7 @@ bool sendBufferEntries(unsigned long window) {
         if (strstr(data, "###"))
             continue; // Line was already sent, got to the next one
 
+        printDebug(data);
         // Add 'buffered' flag
         strcat(data, "&buffered=yo");
 

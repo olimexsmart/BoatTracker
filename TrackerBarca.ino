@@ -94,7 +94,7 @@ void setup() {
     }
 
 
-    printDebug(F("Starting main loop.\n################\n\n"));
+    printDebug(F("Starting main loop.\n#####################################\n\n"));
     digitalWrite(SETUPLED, LOW);
 }
 
@@ -157,7 +157,7 @@ void loop() {
 
     printDebug(F("End loop with millis left: "));
     printDebug(ltoa(DATARATE - constrain(millis() - loopTimer, 0, DATARATE), data, 10));
-    printDebug(F("\n++++++++++++++++\n\n"));
+    printDebug(F("\n+++++++++++++++++++++++++++++++++++++++++++++++++\n\n"));
     digitalWrite(LOOPLED, LOW);
 
     // Repeat keeping the GPS active, maintaining a constant frequency
