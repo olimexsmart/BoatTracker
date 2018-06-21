@@ -27,6 +27,9 @@
 #define GPSLED			44
 #define GSMLED			36
 #define SDLED			33
+#define DOG 			5
+
+bool lastDog = false; // Keeps status of wathcdog pin
 
 // initialize the library instance
 GSMClient client;
@@ -53,16 +56,20 @@ void setup() {
     pinMode(GPSLED, OUTPUT);
     pinMode(GSMLED, OUTPUT);
     pinMode(SDLED, OUTPUT);
+    pinMode(DOG, OUTPUT);
 
     // Rise all leds while setup is executing
     digitalWrite(SETUPLED, HIGH); // Setup is executing
     digitalWrite(GPSLED, HIGH);
     digitalWrite(GSMLED, HIGH);
     digitalWrite(SDLED, HIGH);
+    digitalWrite(DOG, lastDog);
+    signalDog();
 
     // initialize serial communications and wait for port to open:
     Serial.begin(115200);
     Serial1.begin(GPSBaud);
+    printDebug(F("\n#####################################\nPowering Up.\n"));
 
     // Init SD card
     pinMode(SD_CS, OUTPUT);
@@ -85,7 +92,7 @@ void setup() {
     printDebug(F("Got GPS fix.\nWaiting for GSM connectivity...\n"));
 
     // Wait for GSM to be connecter to network
-    waitGSMFix(false);
+    waitGSMFix();
     if (!GSMnotInit) {
         digitalWrite(GSMLED, LOW);
         printDebug(F("Got GSM connection.\n"));
@@ -107,6 +114,7 @@ void loop() {
         If the connection to the server fails, the data will be saved into the memory card.
         Whenever the connection is re-estabilished, all the data stored will be sent.
     */
+    signalDog();
     digitalWrite(LOOPLED, HIGH);
     loopTimer = millis();
     // Get GPS data into URL encoded string
@@ -114,14 +122,12 @@ void loop() {
         // Send to server
         printDebug(data);
         if (GSMnotInit) {	// If not initialized, initialize
-        	printDebug(F("\nAttempting again to initialize GSM.\n"));
-            waitGSMFix(false);
+            printDebug(F("\nAttempting again to initialize GSM.\n"));
+            waitGSMFix();
         }
-       	if (GSMerrors % 30 == 0 && GSMerrors != 0) {// Every 30 errors restart modem if errors persist
-       		printDebug(F("\nTrying to restart modem because of accumulating errors.\n"));
-       		GSMnotInit = true;
-       		waitGSMFix(true); // Flag restart
-       	}
+        if (GSMerrors % 30 == 0 && GSMerrors != 0) {// Every 30 errors restart modem if errors persist
+            while (true); // Let the watchdog reset the whole system
+        }
 
         if (sendData()) { // If not connected this will fail anyway
             digitalWrite(GSMLED, LOW);
@@ -148,7 +154,7 @@ void loop() {
             }
         }
     } else {
-    	printDebug(F("ERROR Signal GPS lost.\n"));
+        printDebug(F("ERROR Signal GPS lost.\n"));
         digitalWrite(GPSLED, HIGH);
         waitGPSFix();
         digitalWrite(GPSLED, LOW);
@@ -164,7 +170,9 @@ void loop() {
     smartDelay(DATARATE - constrain(millis() - loopTimer, 0, DATARATE));
 }
 
-
+/*
+    FUNCTIONS
+*/
 void printDebug(const __FlashStringHelper *ifsh) {
     //
     PGM_P p = reinterpret_cast<PGM_P>(ifsh);
@@ -194,6 +202,12 @@ void printDebug(char * message) {
         history.print(message);
         history.close();
     }
+}
+
+void signalDog() {
+    lastDog = !lastDog;
+    digitalWrite(DOG, lastDog);
+    delay(10);
 }
 
 

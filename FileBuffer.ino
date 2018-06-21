@@ -6,7 +6,7 @@ bool storeInBuffer() {
     // Can't use prinln directly because it appends also a \r which rouins things the on the HTTP side
     strcat(data, "\n");
     if (storage.print(data) != strlen(data)) {
-        printDebug("ERROR Mismatch in written data.\n");
+        printDebug(F("ERROR Mismatch in written data.\n"));
         storage.close();
         return false;
     }
