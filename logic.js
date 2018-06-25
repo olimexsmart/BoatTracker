@@ -31,13 +31,6 @@ $('#confirm').click(function () {
         alert('Start date should be before end date\nCannot warp the space continuum here');
 });
 
-$('#roll').click(function () {
-    if (graphs == undefined)
-        return;
-    for (let index = 0; index < graphs.length; index++) {
-        graphs[index].adjustRoll($('#rollperiod').val());
-    }
-});
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -61,15 +54,9 @@ function newRequest(start, end) {
         success: function (result) {
             // Create graphs both for temperature and humidity
             result = JSON.parse(result);
-            for (let type = 0; type < 2; type++) {
-                // Dygraph needs a Date object instead of a pure epoch
-                for (let k = 0; k < result[type].length; k++) {
-                    result[type][k][0] = new Date(result[type][k][0] * 1000);                    
-                }
-                graphs.push(newGraph("graph" + type, result[type], sensorNames, 30, type));
-                if (graphs.length > 1)
-                    Dygraph.synchronize(graphs, { range: false });
-            }
+
+
+            
         },
         error: function (result) {
             alert('Error retreiving data from server');
@@ -77,34 +64,6 @@ function newRequest(start, end) {
     });
 }
 
-// Set specific options depending on the graph
-// At the same time retreive label names from the checkboxes
-function newGraph(divID, data, labels, roll, type) {
-    label = "";
-    title = "";
-    switch (type) {
-        case 0:
-            label = '°C';
-            title = 'Temperature';
-            break;
-        case 1:
-            label = '%';
-            title = 'Humidity';
-            break;
-    }
 
-    return g = new Dygraph(
-        document.getElementById(divID),
-        data,
-        {
-            labels: labels,
-            rollPeriod: roll,
-            connectSeparatePoints: true,
-            title: title,
-            ylabel: label,
-            legend: 'follow'
-        }
-    );
-}
 
 
