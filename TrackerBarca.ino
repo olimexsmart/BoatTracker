@@ -16,7 +16,7 @@
 #define GPSBaud 		57600
 #define port			80
 #define server			"olimexsmart.it"
-#define DATARATE		30000	// Send point every N millisecons
+#define DATARATE		60000	// Send point every N millisecons
 #define TIMEOUT			15000	// Connection timeout for response from server
 #define SD_CS			11		// SPI SD CS on pin 11
 #define FILEBUFF		"buffer.txt"
@@ -27,7 +27,7 @@
 #define GPSLED			44
 #define GSMLED			36
 #define SDLED			33
-#define DOG 			5
+#define DOG 			5 // Optionally 34, first of bank on the right from top
 
 bool lastDog = false; // Keeps status of wathcdog pin
 
@@ -195,7 +195,7 @@ void printDebug(const __FlashStringHelper *ifsh) {
 }
 
 
-void printDebug(char * message) {
+void printDebug(char * message) { // Overload that takes directly strings
     Serial.print(message);
     File history = SD.open(FILELOG, FILE_WRITE);
     if (history) {
@@ -207,7 +207,6 @@ void printDebug(char * message) {
 void signalDog() {
     lastDog = !lastDog;
     digitalWrite(DOG, lastDog);
-    delay(10);
 }
 
 
