@@ -1,6 +1,9 @@
-var graphs;
+var map;
+var markers = [];
+var flightPath;
+
 // Adapting to window size such that both graphs can be displayed
-$("div[id^='graph']").css({ height: $(window).height() * 0.5, width: Math.min($(window).width() * 0.9, 1175) });
+$("#map").css({ height: $(window).height() * 0.9, width: Math.min($(window).width() * 0.9, 1175) });
 
 $('#today').click(function () {
     var now = Math.round(new Date() / 1000);
@@ -35,28 +38,50 @@ $('#confirm').click(function () {
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 function newRequest(start, end) {
-    graphs = [];
-    // Get which sensors are checked
-    sensors = [];
-    sensorNames = ["Date"];
-    checked = $(':checked');
-    for (let i = 0; i < checked.length; i++) {
-        sensors.push(checked[i].id);
-        sensorNames.push(checked[i].name);
-    }
-
     $.ajax({
-        url: "/logger/retreiveData.php",
+        url: "/tracker/retreiveData.php",
         method: "POST",
         dataType: "text",
-        data: JSON.stringify({ start: start, end: end, sensors: sensors }),
+        data: JSON.stringify({ start: start, end: end }),
         timeout: 30000,
         success: function (result) {
             // Create graphs both for temperature and humidity
-            result = JSON.parse(result);
+            var result = JSON.parse(result);
+            clearMarkers();
+            var bounds = new google.maps.LatLngBounds();
+            var path = [];
 
+            result.forEach(point => {
+                var coordinates = { lat: point[1], lng: point[2] };
+                path.push(coordinates);
+                bounds.extend(coordinates);
+                markers.push(new google.maps.Marker({
+                    position: coordinates,
+                    map: map,
+                    //animation: google.maps.Animation.DROP,
+                    icon: {
+                        path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+                        scale: 3,
+                        fillColor: 'yellow',
+                        fillOpacity: 0.8,
+                        strokeColor: 'red',
+                        strokeWeight: 1,
+                        rotation: point[4] - 180,
+                    },
 
-            
+                }));
+            });
+
+            flightPath = new google.maps.Polyline({
+                path: path,
+                geodesic: true,
+                strokeColor: '#FF0000',
+                strokeOpacity: 1.0,
+                strokeWeight: 2
+            });
+
+            flightPath.setMap(map);
+            map.fitBounds(bounds);
         },
         error: function (result) {
             alert('Error retreiving data from server');
@@ -65,5 +90,17 @@ function newRequest(start, end) {
 }
 
 
+function initMap() {
+    map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 2,
+        center: { lat: 0, lng: 0 }
+    });
+}
 
-
+function clearMarkers() {
+    if (flightPath)
+        flightPath.setMap(null);
+    for (var i = 0; i < markers.length; i++) {
+        markers[i].setMap(null);
+    }
+}
